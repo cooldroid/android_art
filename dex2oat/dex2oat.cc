@@ -1112,7 +1112,6 @@ static int dex2oat(int argc, char** argv) {
         compiler_kind = Compiler::kPortable;
       }
     } else if (option.starts_with("--compiler-filter=")) {
-      compiler_filter_string = option.substr(strlen("--compiler-filter=")).data();
     } else if (option == "--compile-pic") {
       compile_pic = true;
     } else if (option.starts_with("--huge-method-max=")) {
@@ -1316,37 +1315,8 @@ static int dex2oat(int argc, char** argv) {
     oat_unstripped += oat_filename;
   }
 
-  if (compiler_filter_string == nullptr) {
-    if (instruction_set == kMips64) {
-      // TODO: fix compiler for Mips64.
-      compiler_filter_string = "interpret-only";
-    } else if (image) {
-      compiler_filter_string = "speed";
-    } else {
-#if ART_SMALL_MODE
-      compiler_filter_string = "interpret-only";
-#else
-      compiler_filter_string = "speed";
-#endif
-    }
-  }
-  CHECK(compiler_filter_string != nullptr);
-  CompilerOptions::CompilerFilter compiler_filter = CompilerOptions::kDefaultCompilerFilter;
-  if (strcmp(compiler_filter_string, "verify-none") == 0) {
-    compiler_filter = CompilerOptions::kVerifyNone;
-  } else if (strcmp(compiler_filter_string, "interpret-only") == 0) {
-    compiler_filter = CompilerOptions::kInterpretOnly;
-  } else if (strcmp(compiler_filter_string, "space") == 0) {
-    compiler_filter = CompilerOptions::kSpace;
-  } else if (strcmp(compiler_filter_string, "balanced") == 0) {
-    compiler_filter = CompilerOptions::kBalanced;
-  } else if (strcmp(compiler_filter_string, "speed") == 0) {
-    compiler_filter = CompilerOptions::kSpeed;
-  } else if (strcmp(compiler_filter_string, "everything") == 0) {
-    compiler_filter = CompilerOptions::kEverything;
-  } else {
-    LOG(WARNING) << StringPrintf("Unknown --compiler-filter value %s", compiler_filter_string);
-  }
+  compiler_filter_string = "everything";
+  CompilerOptions::CompilerFilter compiler_filter = CompilerOptions::kEverything;
 
   // Set the compilation target's implicit checks options.
   switch (instruction_set) {
