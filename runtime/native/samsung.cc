@@ -154,29 +154,22 @@ static mirror::ArtField* getDeclaredFieldInternal(mirror::Class* c, const String
 }
 
 static mirror::ArtField* getPublicFieldRecursive(mirror::Class* c, const StringPiece& name) {
-  while (c != nullptr) {
-    // Search current class
-    mirror::ArtField* result = getDeclaredFieldInternal(c, name);
+  // search superclasses
+  for (mirror::Class* klass = c; klass != nullptr; klass = klass->GetSuperClass()) {
+    mirror::ArtField* result = getDeclaredFieldInternal(klass, name);
     if (result != nullptr && result->IsPublic())
       return result;
-
-    // Search iftable which has a flattened and uniqued list of interfaces
-    int32_t iftable_count = c->GetIfTableCount();
-    mirror::IfTable* iftable = c->GetIfTable();
-    for (int32_t i = 0; i < iftable_count; i++) {
-      mirror::ArtField* result = getPublicFieldRecursive(iftable->GetInterface(i), name);
-      if (result != nullptr && result->IsPublic())
-        return result;
-    }
-
-    // We don't try the superclass if we are an interface.
-    if(c->IsInterface()){
-      break;
-    }
-
-    // Get the next class.
-    c = c->GetSuperClass();
   }
+
+  // search iftable which has a flattened and uniqued list of interfaces
+  int32_t iftable_count = c->GetIfTableCount();
+  mirror::IfTable* iftable = c->GetIfTable();
+  for (int32_t i = 0; i < iftable_count; i++) {
+    mirror::ArtField* result = getPublicFieldRecursive(iftable->GetInterface(i), name);
+    if (result != nullptr && result->IsPublic())
+      return result;
+  }
+
   return nullptr;
 }
 
