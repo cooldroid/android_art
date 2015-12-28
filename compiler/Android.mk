@@ -243,6 +243,11 @@ $$(ENUM_OPERATOR_OUT_GEN): $$(GENERATED_SRC_DIR)/%_operator_out.cc : $(LOCAL_PAT
     endif
   endif
 
+  ifneq ($(TARGET_HAVE_QC_PERF),true)
+    # CAF bailout patches break dex2oat on some devices - disable them if unneeded
+    LOCAL_CFLAGS += -DDISABLE_CAF_BAILOUT
+  endif
+
   LOCAL_C_INCLUDES += $(ART_C_INCLUDES) art/runtime
 
   ifeq ($$(art_target_or_host),host)
@@ -263,6 +268,11 @@ $$(ENUM_OPERATOR_OUT_GEN): $$(GENERATED_SRC_DIR)/%_operator_out.cc : $(LOCAL_PAT
   ifeq ($$(art_target_or_host),target)
     # For atrace.
     LOCAL_SHARED_LIBRARIES += libcutils
+    ifeq ($(TARGET_HAVE_QC_PERF),true)
+	  # FIXME! Current PERF is built with GCC and needs emutls
+      LOCAL_CLANG := false
+      LOCAL_WHOLE_STATIC_LIBRARIES += libqc-art-compiler
+    endif
     include $(BUILD_SHARED_LIBRARY)
   else # host
     LOCAL_MULTILIB := both

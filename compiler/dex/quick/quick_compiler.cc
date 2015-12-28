@@ -59,6 +59,11 @@ static_assert(5U == static_cast<size_t>(kX86_64), "kX86_64 not 5");
 static_assert(6U == static_cast<size_t>(kMips),   "kMips not 6");
 static_assert(7U == static_cast<size_t>(kMips64), "kMips64 not 7");
 
+#ifndef DISABLE_CAF_BAILOUT
+// check the pass status for early bail out
+thread_local bool check_bail_out;
+#endif
+
 // Additional disabled optimizations (over generally disabled) per instruction set.
 static constexpr uint32_t kDisabledOptimizationsPerISA[] = {
     // 0 = kNone.
@@ -488,12 +493,21 @@ static bool CanCompileShorty(const char* shorty, InstructionSet instruction_set)
   return true;
 }
 
+// check certain conditions that we don't want Quick compiler to handle
+bool QuickCompiler::CheckMoreConditions(CompilationUnit*) const {
+  return true;
+}
+
 // Skip the method that we do not support currently.
 bool QuickCompiler::CanCompileMethod(uint32_t method_idx, const DexFile& dex_file,
                                      CompilationUnit* cu) const {
   // This is a limitation in mir_graph. See MirGraph::SetNumSSARegs.
   if (cu->mir_graph->GetNumOfCodeAndTempVRs() > kMaxAllowedDalvikRegisters) {
     VLOG(compiler) << "Too many dalvik registers : " << cu->mir_graph->GetNumOfCodeAndTempVRs();
+    return false;
+  }
+
+  if (!CheckMoreConditions(cu)) {
     return false;
   }
 
@@ -640,7 +654,7 @@ CompiledMethod* QuickCompiler::Compile(const DexFile::CodeItem* code_item,
   if (instruction_set == kArm) {
     instruction_set = kThumb2;
   }
-  CompilationUnit cu(runtime->GetArenaPool(), instruction_set, driver, class_linker);
+  CompilationUnit cu(runtime->GetArenaPool(), instruction_set, driver, class_linker, this);
   cu.dex_file = &dex_file;
   cu.class_def_idx = class_def_idx;
   cu.method_idx = method_idx;
@@ -722,6 +736,22 @@ CompiledMethod* QuickCompiler::Compile(const DexFile::CodeItem* code_item,
   /* Create the pass driver and launch it */
   PassDriverMEOpts pass_driver(GetPreOptPassManager(), GetPostOptPassManager(), &cu);
   pass_driver.Launch();
+
+#ifndef DISABLE_CAF_BAILOUT
+  if (check_bail_out && cu.mir_graph->PassFailed()) {
+#else
+  if (GetCheckBailOutFlag() && cu.mir_graph->PassFailed()) {
+#endif
+    return nullptr;
+  }
+
+#ifndef DISABLE_CAF_BAILOUT
+  if (check_bail_out) {
+#else
+  if (GetCheckBailOutFlag()) {
+#endif
+    VLOG(compiler) << "fast compile applied to " << PrettyMethod(method_idx, dex_file);
+  }
 
   /* For non-leaf methods check if we should skip compilation when the profiler is enabled. */
   if (cu.compiler_driver->ProfilePresent()
@@ -851,6 +881,9 @@ QuickCompiler::QuickCompiler(CompilerDriver* driver) : Compiler(driver, 100) {
   if (pass_manager_options->GetPrintPassOptions()) {
     PassDriverMEPostOpt::PrintPassOptions(post_opt_pass_manager_.get());
   }
+#ifdef DISABLE_CAF_BAILOUT
+  check_bail_out_ = false;
+#endif
 }
 
 QuickCompiler::~QuickCompiler() {
