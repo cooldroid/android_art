@@ -1198,22 +1198,7 @@ static int dex2oat(int argc, char** argv) {
     }
   }
   CHECK(compiler_filter_string != nullptr);
-  CompilerOptions::CompilerFilter compiler_filter = CompilerOptions::kDefaultCompilerFilter;
-  if (strcmp(compiler_filter_string, "verify-none") == 0) {
-    compiler_filter = CompilerOptions::kVerifyNone;
-  } else if (strcmp(compiler_filter_string, "interpret-only") == 0) {
-    compiler_filter = CompilerOptions::kInterpretOnly;
-  } else if (strcmp(compiler_filter_string, "space") == 0) {
-    compiler_filter = CompilerOptions::kSpace;
-  } else if (strcmp(compiler_filter_string, "balanced") == 0) {
-    compiler_filter = CompilerOptions::kBalanced;
-  } else if (strcmp(compiler_filter_string, "speed") == 0) {
-    compiler_filter = CompilerOptions::kSpeed;
-  } else if (strcmp(compiler_filter_string, "everything") == 0) {
-    compiler_filter = CompilerOptions::kEverything;
-  } else {
-    LOG(WARNING) << StringPrintf("Unknown --compiler-filter value %s", compiler_filter_string);
-  }
+  CompilerOptions::CompilerFilter compiler_filter = CompilerOptions::kEverything;
 
   // Set the compilation target's implicit checks options.
   switch (instruction_set) {
