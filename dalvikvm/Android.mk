@@ -18,7 +18,7 @@ LOCAL_PATH := $(call my-dir)
 
 include art/build/Android.common.mk
 
-dalvikvm_cflags := -Wall -Werror -Wextra -std=gnu++11
+dalvikvm_cflags := -Wall -Wextra -std=gnu++11
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := dalvikvm
