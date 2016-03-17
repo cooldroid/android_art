@@ -588,7 +588,6 @@ class Dex2Oat FINAL {
     bool generate_debug_info = kIsDebugBuild;
     bool watch_dog_enabled = true;
     bool abort_on_hard_verifier_error = false;
-    bool requested_specific_compiler = false;
 
     PassManagerOptions pass_manager_options;
 
@@ -696,7 +695,6 @@ class Dex2Oat FINAL {
           Usage("Error parsing '%s': %s", option.data(), error_msg.c_str());
         }
       } else if (option.starts_with("--compiler-backend=")) {
-        requested_specific_compiler = true;
         StringPiece backend_str = option.substr(strlen("--compiler-backend=")).data();
         if (backend_str == "Quick") {
           compiler_kind_ = Compiler::kQuick;
